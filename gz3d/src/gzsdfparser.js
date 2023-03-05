@@ -332,6 +332,13 @@ GZ3D.SdfParser.prototype.createMaterial = function(material)
   }
 
   var script = material.script;
+
+  if(material.ambient) ambient = material.ambient;
+  if(material.diffuse) diffuse = material.diffuse;
+  if(material.specular) specular = material.specular;
+  if(material.opacity) opacity = material.opacity;
+  if(material.scale) scale = material.scale;
+
   if (script)
   {
     // if there is just one uri convert it to array

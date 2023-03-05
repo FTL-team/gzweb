@@ -55,15 +55,17 @@ GZ3D.Ogre2Json.prototype.Parse = function(_str)
   // { and } in new lines
   str = str.replace(/{|}/gm, '\r\n$&\r\n');
 
+  // Remove comments
+  str = str.replace(/(\/\*[\s\S]*?\*\/)|(\/\/.*$)/gm, '');
+
   // Remove leading and trailing whitespaces per line
   str = str.replace(/^\s+/gm, '');
   str = str.replace(/\s+$/gm, '');
 
   // Remove material alias (material Name : AnotherName {})
-  str = str.replace(/^material (.*):(.*)$/gm, function(match, p1, p2)
-      {
-        return 'material ' + p1;
-      });
+  str = str.replace(/^material (.*):(.*)[^{]*{/gm, function (match, p1, p2) {
+    return 'material ' + p1 + '\n{dependon ' + p2 + "\n";
+  });
 
   // Remove "material " and properly add commas if more than one
   str = str.replace(/^material /gm, function(match, offset)
@@ -120,9 +122,6 @@ GZ3D.Ogre2Json.prototype.Parse = function(_str)
       {
         return 'technique';
       });
-
-  // Remove comments
-  str = str.replace(/(\/\*[\s\S]*?\*\/)|(\/\/.*$)/gm, '');
 
   // Remove leading and trailing whitespaces per line (again)
   str = str.replace(/^\s+/gm,'');
@@ -207,7 +206,11 @@ GZ3D.Ogre2Json.prototype.Parse = function(_str)
         continue;
       }
 
-      this.materials[matName] = {};
+      if(matValue.dependon) {
+        this.materials[matName] = _.cloneDeep(this.materials[matValue.dependon]);
+      } else {
+        this.materials[matName] = {};
+      }
 
       // Ambient
       var ambient = _.get(this.materialObj[material],

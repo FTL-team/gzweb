@@ -1100,6 +1100,12 @@ GZ3D.GZIface.prototype.parseMaterial = function(material)
   var mat;
   var scriptUri;
 
+  if(material.ambient) ambient = [material.ambient.r, material.ambient.g, material.ambient.b, material.ambient.a];
+  if(material.diffuse) diffuse = [material.diffuse.r, material.diffuse.g, material.diffuse.b, material.diffuse.a];
+  if(material.specular) specular = [material.specular.r, material.specular.g, material.specular.b, material.specular.a];
+  if(material.opacity) opacity = material.opacity;
+  if(material.scale) scale = material.scale;
+
   // get texture from material script
   var script  = material.script;
   if (script)

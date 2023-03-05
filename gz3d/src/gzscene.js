@@ -872,6 +872,10 @@ GZ3D.Scene.prototype.createBox = function(width, height, depth)
   for (var i = 0; i < faceUVFixA.length; ++i)
   {
     var idx = faceUVFixA[i]*2;
+    if(idx + 1 >= geometry.faceVertexUvs[0].length) {
+      continue;
+    }
+
     var uva = geometry.faceVertexUvs[0][idx][0];
     geometry.faceVertexUvs[0][idx][0] = geometry.faceVertexUvs[0][idx][1];
     geometry.faceVertexUvs[0][idx][1] = geometry.faceVertexUvs[0][idx+1][1];
@@ -885,6 +889,10 @@ GZ3D.Scene.prototype.createBox = function(width, height, depth)
   {
     var idxB = faceUVFixB[ii]*2;
     var uvc = geometry.faceVertexUvs[0][idxB][0];
+    if(idxB + 1 >= geometry.faceVertexUvs[0].length) {
+      continue;
+    }
+    
     geometry.faceVertexUvs[0][idxB][0] = geometry.faceVertexUvs[0][idxB][2];
     geometry.faceVertexUvs[0][idxB][1] = uvc;
     geometry.faceVertexUvs[0][idxB][2] =  geometry.faceVertexUvs[0][idxB+1][1];
@@ -1886,6 +1894,7 @@ GZ3D.Scene.prototype.setMaterial = function(obj, material)
       {
         var texture = this.textureLoader.load(material.texture);
         texture.magFilter = THREE.NearestFilter;
+        texture.minFilter = THREE.NearestFilter;
         if (material.scale)
         {
           texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
