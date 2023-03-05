@@ -13,6 +13,12 @@ void ConfigLoader::loadAllFiles(ConfigLoader* c, const std::string& path)
 {
   try
   {
+		if(boost::filesystem::is_regular_file(path)) {
+			std::ifstream in(path, std::ios::binary);
+			c->parseScript(in);
+			return;
+		}
+
   	for ( boost::filesystem::recursive_directory_iterator end, dir(path); dir != end; ++dir )
   	{
   		boost::filesystem::path p(*dir);

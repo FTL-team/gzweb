@@ -23,14 +23,33 @@
 
 #define MAX_NUM_MSG_SIZE 1000
 
+typedef union
+             {
+               void *(*func)();
+               void *ptr;
+             } fptr_union_t;
+
 using namespace gzweb;
 
 /////////////////////////////////////////////////
 GazeboInterface::GazeboInterface()
 {
   // Create our node for communication
+  void *handle = dlopen("/opt/ros/noetic/lib/libgazebo_ros_paths_plugin.so", RTLD_LAZY | RTLD_LOCAL);
+  fptr_union_t registerFunc;
+  registerFunc.ptr = dlsym(handle, "RegisterPlugin");
+  registerFunc.func();
+  setenv("GAZEBO_MODEL_DATABASE_URI", "http://not_a_real_url.dev", 1);
+
   this->node.reset(new gazebo::transport::Node());
   this->node->Init();
+
+  auto res = gazebo::common::SystemPaths::Instance()->GetModelPaths();
+  for (auto e : res)
+  {
+    std::cout << "AAA" << e << std::endl;
+  }
+  std::cout << gazebo::common::SystemPaths::Instance()->FindFileURI("model://parquet_plane/materials/textures/parquet.png") << std::endl;
 
   // Gazebo topics
   this->sensorTopic = "~/sensor";
@@ -1279,4 +1298,9 @@ void GazeboInterface::SetPoseFilterMinimumMsgAge(double _m)
 double GazeboInterface::GetPoseFilterMinimumMsgAge()
 {
   return this->minimumMsgAge;
+}
+
+/////////////////////////////////////////////////
+std::string GazeboInterface::ResolveFile(std::string filename) {
+  return gazebo::common::SystemPaths::Instance()->FindFile(filename);
 }

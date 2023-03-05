@@ -151,12 +151,12 @@ std::string OgreMaterialParser::GetMaterialAsJson() const
           if (textureNode)
           {
             std::string textureStr = textureNode->getValue(0);
-            index = textureStr.rfind(".");
-            if (index != std::string::npos)
-            {
-              textureStr = textureStr.substr(0, index+1) + "png";
-            }
-
+            // index = textureStr.rfind(".");
+            // if (index != std::string::npos)
+            // {
+            //   textureStr = textureStr.substr(0, index+1) + "png";
+            // }
+            std::cout << "HELLO TAG" << textureStr << std::endl;
             jsonStr += "\"texture\":\"" + textureStr + "\",";
           }
           ConfigNode *scaleNode = textureUnitNode->findChild("scale");

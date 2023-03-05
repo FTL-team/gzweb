@@ -26,6 +26,8 @@
 #include <thread>
 #include <condition_variable>
 
+#include <gazebo/common/common.hh>
+#include <gazebo/common/Plugin.hh>
 #include <gazebo/msgs/msgs.hh>
 #include <gazebo/transport/TransportIface.hh>
 
@@ -464,6 +466,7 @@ namespace gzweb
     public: double GetPoseFilterMinimumQuaternionSquared();
     public: void SetPoseFilterMinimumMsgAge(double _m);
     public: double GetPoseFilterMinimumMsgAge();
+    public: std::string ResolveFile(std::string filename); 
   };
 }
 

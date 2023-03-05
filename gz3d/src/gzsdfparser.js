@@ -347,7 +347,21 @@ GZ3D.SdfParser.prototype.createMaterial = function(material)
 
     if (script.name)
     {
-      mat = this.materials[script.name];
+      for (var i = 0; i < script.uri.length; ++i) {
+        var scriptParsed = this.materials[script.uri[i]];
+        if (!scriptParsed) {
+          var request = new XMLHttpRequest();
+          request.open('GET', GZ3D.pathFromURI(script.uri[i]) + '?material', false);
+          request.send(null);
+          scriptParsed = JSON.parse(request.responseText);
+
+          this.materials[script.uri[i]] = scriptParsed;
+        }
+        mat = scriptParsed[script.name];
+        if(mat) {
+          break;
+        }
+      }
       // if we already cached the materials
       if (mat)
       {
@@ -359,62 +373,13 @@ GZ3D.SdfParser.prototype.createMaterial = function(material)
 
         if (mat.texture)
         {
-          for (var i = 0; i < script.uri.length; ++i)
-          {
-            var uriType = script.uri[i].substring(0, script.uri[i]
-                    .indexOf('://'));
-            if (uriType === 'model')
-            {
-              // if texture uri
-              if (script.uri[i].indexOf('textures') > 0)
-              {
-                textureUri = script.uri[i].substring(script.uri[i]
-                        .indexOf('://') + 3);
-                break;
-              }
-            }
-            else if (uriType === 'file')
-            {
-              if (script.uri[i].indexOf('materials') > 0)
-              {
-                textureUri = script.uri[i].substring(script.uri[i]
-                        .indexOf('://') + 3, script.uri[i]
-                        .indexOf('materials') + 9)
-                        + '/textures';
-                break;
-              }
-            }
-          }
-          // Map texture name to the corresponding texture.
-          if (!this.usingFilesUrls)
-          {
-            texture = this.textures[mat.texture];
-          }
-          else
-          {
-            if (this.customUrls.length !== 0)
-            {
-              for (var k = 0; k < this.customUrls.length; k++)
-              {
-                if (this.customUrls[k].indexOf(mat.texture) > -1)
-                {
-                  texture = this.customUrls[k];
-                  break;
-                }
-              }
-            }
-            else
-            {
-              texture = this.MATERIAL_ROOT + '/' + textureUri + '/' +
-                mat.texture;
-            }
+          var textureName = mat.texture;
+          if(textureName[0] === '/') {
+            texture = GZ3D.pathFromURI(textureName);
+          } else {
+            texture = GZ3D.pathFromURI(script.uri[script.uri.length - 1] + '/' + textureName);
           }
         }
-      }
-      else
-      {
-        //TODO: how to handle if material is not cached
-        console.log(script.name + ' is not cached!!!');
       }
     }
   }

@@ -1885,6 +1885,7 @@ GZ3D.Scene.prototype.setMaterial = function(obj, material)
       if (material.texture)
       {
         var texture = this.textureLoader.load(material.texture);
+        texture.magFilter = THREE.NearestFilter;
         if (material.scale)
         {
           texture.wrapS = texture.wrapT = THREE.RepeatWrapping;

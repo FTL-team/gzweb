@@ -59,6 +59,8 @@ namespace gzweb
 
     private: static NAN_METHOD(GetPoseMsgFilterMinimumAge);
 
+    private: static NAN_METHOD(ResolveFile);
+
     private: GazeboInterface* gzIface = nullptr;
 
     private: bool isGzServerConnected = false;

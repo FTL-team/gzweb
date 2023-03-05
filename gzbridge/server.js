@@ -35,50 +35,8 @@ let materialScriptsMessage = {};
  */
 let isConnected = false;
 
-/**
- * Callback to serve static files
- * @param req Request
- * @param res Response
- */
-let staticServe = function(req, res) {
-
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Request-Method', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
-  res.setHeader('Access-Control-Allow-Headers', '*');
-
-  let fileLoc = path.resolve(staticBasePath);
-
-  if (req.url === '/')
-    req.url = '/index.html';
-
-  fileLoc = path.join(fileLoc, req.url);
-
-  fs.readFile(fileLoc, function(err, data) {
-    if (err) {
-        res.writeHead(404, 'Not Found');
-        res.write('404: File Not Found!');
-        return res.end();
-    }
-
-    res.statusCode = 200;
-
-    res.write(data);
-    return res.end();
-  });
-};
-
-// HTTP server
-let httpServer = http.createServer(staticServe);
-httpServer.listen(port);
-
-console.log(new Date() + " Static server listening on port: " + port);
-
-// Websocket
 let gzNode = new gzbridge.GZNode();
-if (gzNode.getIsGzServerConnected())
-{
+if (gzNode.getIsGzServerConnected()) {
   gzNode.loadMaterialScripts(staticBasePath + '/assets');
   gzNode.setPoseMsgFilterMinimumAge(0.02);
   gzNode.setPoseMsgFilterMinimumDistanceSquared(0.00001);
@@ -88,18 +46,84 @@ if (gzNode.getIsGzServerConnected())
   console.log('Gazebo transport node connected to gzserver.');
   console.log('Pose message filter parameters between successive messages: ');
   console.log('  minimum seconds: ' +
-      gzNode.getPoseMsgFilterMinimumAge());
+    gzNode.getPoseMsgFilterMinimumAge());
   console.log('  minimum XYZ distance squared: ' +
-      gzNode.getPoseMsgFilterMinimumDistanceSquared());
+    gzNode.getPoseMsgFilterMinimumDistanceSquared());
   console.log('  minimum Quartenion distance squared:'
-      + ' ' + gzNode.getPoseMsgFilterMinimumQuaternionSquared());
+    + ' ' + gzNode.getPoseMsgFilterMinimumQuaternionSquared());
   console.log('--------------------------------------------------------------');
 }
-else
-{
+else {
   materialScriptsMessage =
-      gzNode.getMaterialScriptsMessage(staticBasePath + '/assets');
+    gzNode.getMaterialScriptsMessage(staticBasePath + '/assets');
 }
+
+/**
+ * Callback to serve static files
+ * @param req Request
+ * @param res Response
+ */
+let staticServe = function (req, res) {
+
+  // CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Request-Method', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+
+  let fileLoc = path.resolve(staticBasePath);
+  console.log(fileLoc);
+
+  let urlParsed = req.url.split('?');
+  req.url = urlParsed[0];
+  let hr = urlParsed[1];
+
+  if (req.url === '/')
+    req.url = '/index.html';
+
+  if (req.url.indexOf('root/') != -1) {
+    fileLoc = req.url.split('root/')[1];
+  } else if (req.url.indexOf('file/') != -1) {
+    fileLoc = gzNode.resolveFile('file://' + req.url.split('file/')[1]);
+  } else if (req.url.indexOf('model/') != -1) {
+    fileLoc = gzNode.resolveFile('model://' + req.url.split('model/')[1]);
+  } else {
+    fileLoc = path.join(fileLoc, req.url);
+  }
+
+  // gzNode.getMaterialScriptsMessage()
+
+  console.log("FILE", req.url, fileLoc)
+  if (hr == 'material') {
+    let parsed = gzNode.getMaterialScriptsMessage(fileLoc);
+
+    res.statusCode = 200;
+
+    res.write(parsed);
+    return res.end();
+  } else {
+    fs.readFile(fileLoc, function (err, data) {
+      if (err) {
+        res.writeHead(404, 'Not Found');
+        res.write('404: File Not Found!');
+        return res.end();
+      }
+
+      res.statusCode = 200;
+
+      res.write(data);
+      return res.end();
+    });
+  }
+};
+
+// HTTP server
+let httpServer = http.createServer(staticServe);
+httpServer.listen(port);
+
+console.log(new Date() + " Static server listening on port: " + port);
+
+// Websocket
 
 // Start websocket server
 let wsServer = new WebSocketServer({
@@ -112,17 +136,17 @@ let wsServer = new WebSocketServer({
   autoAcceptConnections: false
 });
 
-wsServer.on('request', function(request) {
+wsServer.on('request', function (request) {
 
   // Accept request
   let connection = request.accept(null, request.origin);
 
   // If gzserver is not connected just send material scripts and status
-  if (!gzNode.getIsGzServerConnected())
-  {
+  console.log("AAAAAA", gzNode.getIsGzServerConnected())
+  if (!gzNode.getIsGzServerConnected()) {
     // create error status and send it
     let statusMessage =
-        '{"op":"publish","topic":"~/status","msg":{"status":"error"}}';
+      '{"op":"publish","topic":"~/status","msg":{"status":"error"}}';
     connection.sendUTF(statusMessage);
     // send material scripts message
     connection.sendUTF(materialScriptsMessage);
@@ -131,34 +155,32 @@ wsServer.on('request', function(request) {
 
   connections.push(connection);
 
-  if (!isConnected)
-  {
+  if (!isConnected) {
     isConnected = true;
     gzNode.setConnected(isConnected);
   }
 
   console.log(new Date() + ' New connection accepted from: ' + request.origin +
-      ' ' + connection.remoteAddress);
+    ' ' + connection.remoteAddress);
 
   // Handle messages received from client
-  connection.on('message', function(message) {
+  connection.on('message', function (message) {
     if (message.type === 'utf8') {
       console.log(new Date() + ' Received Message: ' + message.utf8Data +
-          ' from ' + request.origin + ' ' + connection.remoteAddress);
+        ' from ' + request.origin + ' ' + connection.remoteAddress);
       gzNode.request(message.utf8Data);
     }
     else if (message.type === 'binary') {
       console.log(new Date() + ' Received Binary Message of ' +
-          message.binaryData.length + ' bytes from ' + request.origin + ' ' +
-          connection.remoteAddress);
+        message.binaryData.length + ' bytes from ' + request.origin + ' ' +
+        connection.remoteAddress);
       connection.sendBytes(message.binaryData);
     }
   });
 
-  // Handle client disconnection
-  connection.on('close', function(reasonCode, description) {
+  connection.on('close', function (reasonCode, description) {
     console.log(new Date() + ' Peer ' + request.origin + ' ' +
-        connection.remoteAddress + ' disconnected.');
+      connection.remoteAddress + ' disconnected.');
 
     // remove connection from array
     let conIndex = connections.indexOf(connection);
@@ -173,19 +195,14 @@ wsServer.on('request', function(request) {
 });
 
 // If not connected, periodically send messages
-if (gzNode.getIsGzServerConnected())
-{
+if (gzNode.getIsGzServerConnected()) {
   setInterval(update, 10);
 
-  function update()
-  {
-    if (connections.length > 0)
-    {
+  function update() {
+    if (connections.length > 0) {
       let msgs = gzNode.getMessages();
-      for (let i = 0; i < connections.length; ++i)
-      {
-        for (let j = 0; j < msgs.length; ++j)
-        {
+      for (let i = 0; i < connections.length; ++i) {
+        for (let j = 0; j < msgs.length; ++j) {
           connections[i].sendUTF(msgs[j]);
         }
       }

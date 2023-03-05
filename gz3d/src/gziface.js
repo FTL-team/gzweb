@@ -16,7 +16,7 @@ GZ3D.GZIface = function(scene, url)
 
   this.isConnected = false;
 
-  this.material = [];
+  this.material = {};
   this.entityMaterial = {};
 
   this.connect();
@@ -118,8 +118,8 @@ GZ3D.GZIface.prototype.onConnected = function()
 
   var materialUpdate = function(message)
   {
-    this.material = message;
-    this.emitter.emit('material', this.material);
+    // this.material = message;
+    // this.emitter.emit('material', this.material);
 
   };
   materialTopic.subscribe(materialUpdate.bind(this));
@@ -946,58 +946,19 @@ GZ3D.GZIface.prototype.createGeom = function(geom, material, parent)
       var submesh = geom.mesh.submesh;
       var centerSubmesh = geom.mesh.center_submesh;
 
-      var uriType = meshUri.substring(0, meshUri.indexOf('://'));
-      var modelName = '';
-      // file:// or model://
-      if (uriType === 'file' || uriType === 'model')
-      {
-        modelName = meshUri.substring(meshUri.indexOf('://') + 3);
-      }
-      // absolute path - happens when an urdf model is spawned
-      // into gazebo through gazebo_ros_pkgs
-      else if (meshUri.length > 0 && meshUri[0] === '/')
-      {
-        // hacky but try to guess the model name from uri based on the
-        // meshes directory string
-        var idx = meshUri.indexOf('/meshes/');
-        if (idx > 1)
-        {
-          modelName = meshUri.substring(meshUri.lastIndexOf('/', idx-1));
-        }
-      }
-      if (modelName.length > 0)
-      {
-        if (geom.mesh.scale)
-        {
+      var modelUri = GZ3D.pathFromURI(meshUri);
+
+      if (modelUri.length > 0) {
+        if (geom.mesh.scale) {
           parent.scale.x = geom.mesh.scale.x;
           parent.scale.y = geom.mesh.scale.y;
           parent.scale.z = geom.mesh.scale.z;
         }
 
-        var modelUri = uriPath + '/' + modelName;
-        // Use coarse version on touch devices
-        if (modelUri.indexOf('.dae') !== -1 && isTouchDevice)
-        {
-          modelUri = modelUri.substring(0,modelUri.indexOf('.dae'));
-
-          var checkModel = new XMLHttpRequest();
-          checkModel.open('HEAD', modelUri+'_coarse.dae', false);
-          checkModel.send();
-          if (checkModel.status === 404)
-          {
-            modelUri = modelUri+'.dae';
-          }
-          else
-          {
-            modelUri = modelUri+'_coarse.dae';
-          }
-        }
-
+        // var modelUri = uriPath + '/' + modelName;
         var ext = modelUri.substr(-4).toLowerCase();
         var materialName = parent.name + '::' + modelUri;
         this.entityMaterial[materialName] = mat;
-
-        modelUri = this.protocol + '//' + this.url + '/' + modelUri;
 
         this.scene.loadMeshFromUri(modelUri, submesh, centerSubmesh,
           function(mesh) {
@@ -1137,6 +1098,7 @@ GZ3D.GZIface.prototype.parseMaterial = function(material)
   var opacity;
   var scale;
   var mat;
+  var scriptUri;
 
   // get texture from material script
   var script  = material.script;
@@ -1144,7 +1106,23 @@ GZ3D.GZIface.prototype.parseMaterial = function(material)
   {
     if (script.name)
     {
-      mat = this.material[script.name];
+      for (var i = 0; i < script.uri.length; ++i) {
+        scriptUri = script.uri[i];
+        var scriptParsed = this.material[scriptUri];
+        if (!scriptParsed) {
+          var request = new XMLHttpRequest();
+          request.open('GET', GZ3D.pathFromURI(scriptUri) + '?material', false);
+          request.send(null);
+          scriptParsed = JSON.parse(request.responseText);
+
+          this.material[scriptUri] = scriptParsed;
+        }
+        mat = scriptParsed[script.name];
+        if(mat) {
+          break;
+        }
+      }
+
       if (mat)
       {
         ambient = mat['ambient'];
@@ -1156,43 +1134,10 @@ GZ3D.GZIface.prototype.parseMaterial = function(material)
         var textureName = mat['texture'];
         if (textureName)
         {
-          for (var i = 0; i < script.uri.length; ++i)
-          {
-            // handle the weird case where empty scripts become converted to
-            // a single '__default__' script
-            var scriptUri = script.uri[i];
-            if (scriptUri === '__default__')
-            {
-              scriptUri = 'file://media/materials/scripts/gazebo.material';
-            }
-
-            var type = scriptUri.substring(0,
-                  scriptUri.indexOf('://'));
-
-            if (type === 'model')
-            {
-              if (scriptUri.indexOf('textures') > 0)
-              {
-                textureUri = scriptUri.substring(
-                    scriptUri.indexOf('://') + 3);
-                break;
-              }
-            }
-            else if (type === 'file')
-            {
-              if (scriptUri.indexOf('materials') > 0)
-              {
-                textureUri = scriptUri.substring(
-                    scriptUri.indexOf('://') + 3,
-                    scriptUri.indexOf('materials') + 9) + '/textures';
-                break;
-              }
-            }
-          }
-          if (textureUri)
-          {
-            texture = uriPath + '/' +
-                textureUri  + '/' + textureName;
+          if(textureName[0] === '/') {
+            texture = GZ3D.pathFromURI(textureName);
+          } else {
+            texture = GZ3D.pathFromURI(script.uri[script.uri.length - 1] + '/' + textureName);
           }
         }
       }

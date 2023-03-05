@@ -82,6 +82,9 @@ NAN_MODULE_INIT(GZNode::Init)
   Nan::SetPrototypeMethod(tpl, "getMaterialScriptsMessage",
       GetMaterialScriptsMessage);
 
+  Nan::SetPrototypeMethod(tpl, "resolveFile",
+      ResolveFile);
+
   target->Set(Nan::GetCurrentContext(), class_name, 
     tpl->GetFunction(Nan::GetCurrentContext()).ToLocalChecked()
     ).ToChecked();
@@ -164,12 +167,8 @@ NAN_METHOD(GZNode::GetMaterialScriptsMessage)
   materialParser.Load(std::string(*path));
   std::string topic = "~/material";
   std::string materialJson = materialParser.GetMaterialAsJson();
-  std::string msg;
-  msg += "{\"op\":\"publish\",\"topic\":\"" + topic + "\", \"msg\":";
-  msg += materialJson;
-  msg += "}";
-
-  info.GetReturnValue().Set(Nan::New(msg.c_str()).ToLocalChecked());
+  
+  info.GetReturnValue().Set(Nan::New(materialJson.c_str()).ToLocalChecked());
 }
 
 /////////////////////////////////////////////////
@@ -268,6 +267,29 @@ NAN_METHOD(GZNode::GetPoseMsgFilterMinimumAge)
   GZNode* obj = ObjectWrap::Unwrap<GZNode>(info.This());
   double value  = obj->gzIface->GetPoseFilterMinimumMsgAge();
   info.GetReturnValue().Set(value);
+}
+
+/////////////////////////////////////////////////
+NAN_METHOD(GZNode::ResolveFile)
+{
+  GZNode* obj = ObjectWrap::Unwrap<GZNode>(info.This());
+  Isolate* isolate = info.GetIsolate();
+
+  if (info.Length() < 1)
+  {
+    return Nan::ThrowTypeError("GZNode::ResolveFile - Wrong number of arguments. One arg expected.");
+  }
+
+  if (!info[0]->IsString())
+  {
+    return Nan::ThrowTypeError("GZNode::ResolveFile - Wrong argument type. String expected.");
+  }
+
+  String::Utf8Value request(isolate, info[0]);
+  std::string path = obj->gzIface->ResolveFile(std::string(*request));
+
+  // std::string msg = "HELLO OOOOO";
+  info.GetReturnValue().Set(Nan::New(path.c_str()).ToLocalChecked());
 }
 
 /////////////////////////////////////////////////
