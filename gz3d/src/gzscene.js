@@ -1855,6 +1855,7 @@ GZ3D.Scene.prototype.setMaterial = function(obj, material)
     if (material)
     {
       obj.material = new THREE.MeshPhongMaterial();
+      obj.material.shininess = 0; 
       var ambient = material.ambient;
       var diffuse = material.diffuse;
       if (diffuse)

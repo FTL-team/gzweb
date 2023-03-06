@@ -77,6 +77,7 @@ let staticServe = function (req, res) {
   let urlParsed = req.url.split('?');
   req.url = urlParsed[0];
   let hr = urlParsed[1];
+  if (!hr) hr = '';
 
   if (req.url === '/')
     req.url = '/index.html';
@@ -93,28 +94,53 @@ let staticServe = function (req, res) {
 
   // gzNode.getMaterialScriptsMessage()
 
+
+  res.statusCode = 200;
+
   console.log("FILE", req.url, fileLoc)
-  if (hr == 'material') {
-    let parsed = gzNode.getMaterialScriptsMessage(fileLoc);
-
-    res.statusCode = 200;
-
-    res.write(parsed);
-    return res.end();
-  } else {
-    fs.readFile(fileLoc, function (err, data) {
-      if (err) {
-        res.writeHead(404, 'Not Found');
-        res.write('404: File Not Found!');
-        return res.end();
-      }
-
-      res.statusCode = 200;
-
-      res.write(data);
+  let filesToSend = [fileLoc];
+  function sendFile() {
+    if (filesToSend.length == 0) {
       return res.end();
-    });
+    }
+
+
+    let currentFile = filesToSend.pop();
+    console.log("Sending file", currentFile)
+    let stat;
+    try {
+      stat = fs.lstatSync(currentFile);
+    } catch (e) {
+      res.statusCode = 404;
+      res.write('404: File Not Found!');
+      return res.end();
+    }
+
+    console.log(currentFile, stat.isDirectory())
+    if (stat.isDirectory()) {
+      fs.readdir(currentFile, function (err, files) {
+        files.forEach(function (file) {
+          filesToSend.push(path.join(currentFile, file))
+        })
+        sendFile()
+      })
+    } else {
+      if (currentFile.endsWith(hr)) {
+        fs.readFile(currentFile, function (err, data) {
+          if (err) {
+            res.write('404: File Not Found!');
+            return res.end();
+          }
+
+          res.write(data);
+          sendFile();
+        });
+      } else {
+        sendFile();
+      }
+    }
   }
+  sendFile()
 };
 
 // HTTP server

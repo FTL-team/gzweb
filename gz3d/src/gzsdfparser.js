@@ -332,19 +332,40 @@ GZ3D.SdfParser.prototype.createMaterial = function(material)
   }
 
   var script = material.script;
+  opacity = 1;
 
-  if(material.ambient) ambient = material.ambient;
-  if(material.diffuse) diffuse = material.diffuse;
-  if(material.specular) specular = material.specular;
-  if(material.opacity) opacity = material.opacity;
-  if(material.scale) scale = material.scale;
-
+  if(material.ambient) { 
+    ambient = [material.ambient.r, material.ambient.g, material.ambient.b, material.ambient.a];
+  }
+  if(material.diffuse) { 
+    diffuse = [material.diffuse.r, material.diffuse.g, material.diffuse.b, material.diffuse.a];
+  }
+  if(material.specular) { 
+    specular = [material.specular.r, material.specular.g, material.specular.b, material.specular.a];
+  }
+  if(material.opacity) { 
+    opacity = material.opacity;
+  }
+  if(material.scale) { 
+    scale = material.scale;
+  }
   if (script)
   {
+    // Fix very fun clover description
+    if (script.name === 'Polycarbonate') {
+      ambient = [0.57, 0.531, 0.444, 1];
+      diffuse = [0.57, 0.531, 0.444, 1];
+      specular = [0.5, 0.5, 0.5, 1];
+      opacity = 0.72;
+      script.name = undefined;
+    }
+
     // if there is just one uri convert it to array
     if (!script.uri)
     {
       script.uri = ['file://media/materials/scripts/gazebo.material'];
+
+      
     }
 
     if (!(script.uri instanceof Array))
@@ -354,21 +375,20 @@ GZ3D.SdfParser.prototype.createMaterial = function(material)
 
     if (script.name)
     {
-      for (var i = 0; i < script.uri.length; ++i) {
-        var scriptParsed = this.materials[script.uri[i]];
-        if (!scriptParsed) {
+      var combinedUri = script.uri.join(';');
+      var scriptParsed = this.material[combinedUri];
+      if (!scriptParsed) {
+        var parser = new GZ3D.Ogre2Json();
+        for (var i = 0; i < script.uri.length; ++i) {
           var request = new XMLHttpRequest();
           request.open('GET', GZ3D.pathFromURI(script.uri[i]) + '?material', false);
           request.send(null);
-          scriptParsed = JSON.parse(request.responseText);
-
-          this.materials[script.uri[i]] = scriptParsed;
+          parser.Parse(request.responseText);
         }
-        mat = scriptParsed[script.name];
-        if(mat) {
-          break;
-        }
+        scriptParsed = parser.materials;
+        this.material[combinedUri] = scriptParsed;
       }
+      mat = scriptParsed[script.name];
       // if we already cached the materials
       if (mat)
       {
