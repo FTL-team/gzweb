@@ -16,7 +16,7 @@ const staticBasePath = './../http/client';
 /**
  * Port to serve from, defaults to 8080
  */
-const port = process.argv[2] || 8080;
+const port = process.argv[2] || 7777;
 
 /**
  * Array of websocket connections currently active, if it is empty, there are no

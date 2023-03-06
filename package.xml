@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>gzweb</name>
+  <version>0.1.0</version>
+  <description>Gazebo web-client</description>
+
+  <maintainer email="mrom06@ya.ru">Max Ramanouski</maintainer>
+  <license>Apache 2.0</license>
+
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>rospy</build_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>led_msgs</exec_depend>
+</package>

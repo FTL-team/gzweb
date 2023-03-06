@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 enable_testing()
 
 project (gzweb)
+find_package(catkin REQUIRED)
+catkin_package()
+
 include(ExternalProject)
 
 set (GZWEB_MAJOR_VERSION 2)
@@ -73,7 +76,7 @@ if ("${ImageMagick}" STREQUAL "ImageMagick-NOTFOUND")
 endif()
 
 add_subdirectory(gz3d)
-add_subdirectory(tools)
+# add_subdirectory(tools)
 
 ########### Add uninstall target ###############
 configure_file(
@@ -82,3 +85,7 @@ configure_file(
   IMMEDIATE @ONLY)
 add_custom_target(uninstall
   "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake")
+
+install(PROGRAMS scripts/gzweb.sh
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
