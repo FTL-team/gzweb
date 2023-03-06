@@ -251,10 +251,16 @@ namespace gzweb
     private: std::map<int, gazebo::msgs::Request *> requests;
 
     /// \brief Mutex to lock the various message buffers.
-    private: std::recursive_mutex receiveMutex;
+    private: std::mutex receiveMutex;
+
+    /// \brief The condition to notify when recieve buffers change.
+    private: std::condition_variable recieveCondition;
 
     /// \brief Mutex to lock the service request buffer.
-    private: std::recursive_mutex serviceMutex;
+    private: std::mutex serviceMutex;
+
+    /// \brief The condition to notify when service request buffer changes.
+    private: std::condition_variable serviceCondition;
 
     /// \brief Mutex to lock the incoming message request buffer.
     private: std::recursive_mutex incomingMutex;

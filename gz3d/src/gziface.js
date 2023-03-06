@@ -25,6 +25,8 @@ GZ3D.GZIface = function(scene, url)
   this.numConnectionTrials = 0;
   this.maxConnectionTrials = 30; // try to connect 30 times
   this.timeToSleepBtwTrials = 1000; // wait 1 second between connection trials
+
+  this.ledsController = new GZ3D.LedsController();
 };
 
 /**
@@ -645,6 +647,9 @@ GZ3D.GZIface.prototype.onConnected = function()
   };
 
   this.emitter.on('logPlayChanged', publishPlaybackControl);
+
+  // Leds
+  this.ledsController.subscribe(this.webSocket);
 };
 
 /**
@@ -774,6 +779,10 @@ GZ3D.GZIface.prototype.createVisualFromMsg = function(visual)
     var geom = visual.geometry;
     var visualObj = new THREE.Object3D();
     visualObj.name = visual.name;
+    if(visual.name.indexOf('led_link_visual_') !== -1) {
+      this.ledsController.reegisterLed(visualObj);
+    }
+    // console.log("Creating visual", visualObj.name, visualObj);
     if (visual.pose)
     {
       this.scene.setPose(visualObj, visual.pose.position,

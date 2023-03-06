@@ -783,6 +783,7 @@ GZ3D.SdfParser.prototype.createVisual = function(visual)
   {
     var visualObj = new THREE.Object3D();
     visualObj.name = visual['@name'];
+    console.log(visualObj.name);
 
     if (visual.pose)
     {

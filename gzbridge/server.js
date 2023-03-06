@@ -5,6 +5,7 @@
 const WebSocketServer = require('websocket').server;
 const http = require('http');
 const fs = require('fs');
+const { spawn } = require('child_process')
 const path = require('path');
 const gzbridge = require('./build/Debug/gzbridge');
 
@@ -72,7 +73,7 @@ let staticServe = function (req, res) {
   res.setHeader('Access-Control-Allow-Headers', '*');
 
   let fileLoc = path.resolve(staticBasePath);
-  console.log(fileLoc);
+  // console.log(fileLoc);
 
   let urlParsed = req.url.split('?');
   req.url = urlParsed[0];
@@ -97,7 +98,7 @@ let staticServe = function (req, res) {
 
   res.statusCode = 200;
 
-  console.log("FILE", req.url, fileLoc)
+  // console.log("FILE", req.url, fileLoc)
   let filesToSend = [fileLoc];
   function sendFile() {
     if (filesToSend.length == 0) {
@@ -106,7 +107,7 @@ let staticServe = function (req, res) {
 
 
     let currentFile = filesToSend.pop();
-    console.log("Sending file", currentFile)
+    // console.log("Sending file", currentFile)
     let stat;
     try {
       stat = fs.lstatSync(currentFile);
@@ -116,7 +117,7 @@ let staticServe = function (req, res) {
       return res.end();
     }
 
-    console.log(currentFile, stat.isDirectory())
+    // console.log(currentFile, stat.isDirectory())
     if (stat.isDirectory()) {
       fs.readdir(currentFile, function (err, files) {
         files.forEach(function (file) {
@@ -143,6 +144,7 @@ let staticServe = function (req, res) {
   sendFile()
 };
 
+
 // HTTP server
 let httpServer = http.createServer(staticServe);
 httpServer.listen(port);
@@ -168,7 +170,7 @@ wsServer.on('request', function (request) {
   let connection = request.accept(null, request.origin);
 
   // If gzserver is not connected just send material scripts and status
-  console.log("AAAAAA", gzNode.getIsGzServerConnected())
+  // console.log("AAAAAA", gzNode.getIsGzServerConnected())
   if (!gzNode.getIsGzServerConnected()) {
     // create error status and send it
     let statusMessage =
@@ -192,21 +194,21 @@ wsServer.on('request', function (request) {
   // Handle messages received from client
   connection.on('message', function (message) {
     if (message.type === 'utf8') {
-      console.log(new Date() + ' Received Message: ' + message.utf8Data +
-        ' from ' + request.origin + ' ' + connection.remoteAddress);
+      // console.log(new Date() + ' Received Message: ' + message.utf8Data +
+      //   ' from ' + request.origin + ' ' + connection.remoteAddress);
       gzNode.request(message.utf8Data);
     }
     else if (message.type === 'binary') {
-      console.log(new Date() + ' Received Binary Message of ' +
-        message.binaryData.length + ' bytes from ' + request.origin + ' ' +
-        connection.remoteAddress);
+      // console.log(new Date() + ' Received Binary Message of ' +
+      //   message.binaryData.length + ' bytes from ' + request.origin + ' ' +
+        // connection.remoteAddress);
       connection.sendBytes(message.binaryData);
     }
   });
 
   connection.on('close', function (reasonCode, description) {
-    console.log(new Date() + ' Peer ' + request.origin + ' ' +
-      connection.remoteAddress + ' disconnected.');
+    // console.log(new Date() + ' Peer ' + request.origin + ' ' +
+    //   connection.remoteAddress + ' disconnected.');
 
     // remove connection from array
     let conIndex = connections.indexOf(connection);
@@ -222,7 +224,7 @@ wsServer.on('request', function (request) {
 
 // If not connected, periodically send messages
 if (gzNode.getIsGzServerConnected()) {
-  setInterval(update, 10);
+  setInterval(update, 1000 / 32);
 
   function update() {
     if (connections.length > 0) {
@@ -235,3 +237,22 @@ if (gzNode.getIsGzServerConnected()) {
     }
   }
 }
+
+
+// Led plugin
+let led_plugin = spawn(path.join(__dirname, "../plugins/led.py"), [], { stdio: 'pipe' });
+
+led_plugin.stdout.on('data', (data) => {
+  if (connections.length > 0) {
+    for (let i = 0; i < connections.length; ++i) {
+      connections[i].sendUTF(data);
+    }
+  }
+});
+led_plugin.stderr.on('data', (data) => {
+  console.error(`led_plugin_error: ${data}`);
+});
+
+led_plugin.on('close', () => {
+  console.log("ERROR")
+})

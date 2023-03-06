@@ -247,7 +247,8 @@ void GazeboInterface::Fini()
 void GazeboInterface::ProcessMessages()
 {
   {
-    std::lock_guard<std::recursive_mutex> lock(this->receiveMutex);
+    std::unique_lock<std::mutex> lock(this->receiveMutex);
+    this->recieveCondition.wait(lock);
 
     // Process incoming messages.
     std::vector<std::string> msgs = this->PopIncomingMessages();
@@ -739,8 +740,9 @@ void GazeboInterface::ProcessMessages()
         std::string service = get_value(msg.c_str(), "service");
         if (!service.empty())
         {
-          std::lock_guard<std::recursive_mutex> lock(this->serviceMutex);
+          std::lock_guard<std::mutex> lock(this->serviceMutex);
           this->serviceRequests.push_back(msg);
+          this->serviceCondition.notify_all();
         }
       }
     }
@@ -864,10 +866,15 @@ void GazeboInterface::ProcessServiceRequests()
 {
   std::vector<std::string> services;
   {
-    std::lock_guard<std::recursive_mutex> lock(this->serviceMutex);
+    std::unique_lock<std::mutex> lock(this->serviceMutex);
+    while(this->serviceRequests.size() == 0) {
+      this->serviceCondition.wait(lock);
+    }
+
     services = this->serviceRequests;
     this->serviceRequests.clear();
   }
+  std::cout << "SERVICES: " << services.size() << std::endl;
 
   // process service request outside lock otherwise somehow it deadlocks
   for (unsigned int i = 0; i < services.size(); ++i)
@@ -909,8 +916,9 @@ void GazeboInterface::OnModelMsg(ConstModelPtr &_msg)
   if (!this->IsConnected())
     return;
 
-  std::lock_guard<std::recursive_mutex> lock(this->receiveMutex);
+  std::lock_guard<std::mutex> lock(this->receiveMutex);
   this->modelMsgs.push_back(_msg);
+  this->recieveCondition.notify_all();
 }
 
 /////////////////////////////////////////////////
@@ -979,7 +987,7 @@ void GazeboInterface::OnPoseMsg(ConstPosesStampedPtr &_msg)
   if (!this->IsConnected())
     return;
 
-  std::lock_guard<std::recursive_mutex> lock(this->receiveMutex);
+  std::lock_guard<std::mutex> lock(this->receiveMutex);
   PoseMsgs_L::iterator iter;
 
   for (int i = 0; i < _msg->pose_size(); ++i)
@@ -1024,6 +1032,8 @@ void GazeboInterface::OnPoseMsg(ConstPosesStampedPtr &_msg)
       }
     }
   }
+
+  this->recieveCondition.notify_all();
 }
 
 /////////////////////////////////////////////////
@@ -1032,8 +1042,9 @@ void GazeboInterface::OnRequest(ConstRequestPtr &_msg)
   if (!this->IsConnected())
     return;
 
-  std::lock_guard<std::recursive_mutex> lock(this->receiveMutex);
+  std::lock_guard<std::mutex> lock(this->receiveMutex);
   this->requestMsgs.push_back(_msg);
+  this->recieveCondition.notify_all();
 }
 
 /////////////////////////////////////////////////
@@ -1071,8 +1082,9 @@ void GazeboInterface::OnLightFactoryMsg(ConstLightPtr &_msg)
   if (!this->IsConnected())
     return;
 
-  std::lock_guard<std::recursive_mutex> lock(this->receiveMutex);
+  std::lock_guard<std::mutex> lock(this->receiveMutex);
   this->lightFactoryMsgs.push_back(_msg);
+  this->recieveCondition.notify_all();
 }
 
 /////////////////////////////////////////////////
@@ -1081,8 +1093,9 @@ void GazeboInterface::OnLightModifyMsg(ConstLightPtr &_msg)
   if (!this->IsConnected())
     return;
 
-  std::lock_guard<std::recursive_mutex> lock(this->receiveMutex);
+  std::lock_guard<std::mutex> lock(this->receiveMutex);
   this->lightModifyMsgs.push_back(_msg);
+  this->recieveCondition.notify_all();
 }
 
 /////////////////////////////////////////////////
@@ -1091,8 +1104,9 @@ void GazeboInterface::OnScene(ConstScenePtr &_msg)
   if (!this->IsConnected())
     return;
 
-  std::lock_guard<std::recursive_mutex> lock(this->receiveMutex);
+  std::lock_guard<std::mutex> lock(this->receiveMutex);
   this->sceneMsgs.push_back(_msg);
+  this->recieveCondition.notify_all();
 }
 
 /////////////////////////////////////////////////
@@ -1101,8 +1115,9 @@ void GazeboInterface::OnPhysicsMsg(ConstPhysicsPtr &_msg)
   if (!this->IsConnected())
     return;
 
-  std::lock_guard<std::recursive_mutex> lock(this->receiveMutex);
+  std::lock_guard<std::mutex> lock(this->receiveMutex);
   this->physicsMsgs.push_back(_msg);
+  this->recieveCondition.notify_all();
 }
 
 /////////////////////////////////////////////////
@@ -1132,16 +1147,18 @@ void GazeboInterface::OnStats(ConstWorldStatisticsPtr &_msg)
     this->lastPausedState = paused;
     this->lastStatsMsg = _msg;
 
-    std::lock_guard<std::recursive_mutex> lock(this->receiveMutex);
+    std::lock_guard<std::mutex> lock(this->receiveMutex);
     this->statsMsgs.push_back(_msg);
+    this->recieveCondition.notify_all();
   }
 }
 
 /////////////////////////////////////////////////
 void GazeboInterface::OnRoad(ConstRoadPtr &_msg)
 {
-  std::lock_guard<std::recursive_mutex> lock(this->receiveMutex);
+  std::lock_guard<std::mutex> lock(this->receiveMutex);
   this->roadMsgs.push_back(_msg);
+  this->recieveCondition.notify_all();
 }
 
 /////////////////////////////////////////////////
@@ -1150,8 +1167,9 @@ void GazeboInterface::OnJointMsg(ConstJointPtr &_msg)
   if (!this->IsConnected())
     return;
 
-  std::lock_guard<std::recursive_mutex> lock(this->receiveMutex);
+  std::lock_guard<std::mutex> lock(this->receiveMutex);
   this->jointMsgs.push_back(_msg);
+  this->recieveCondition.notify_all();
 }
 
 /////////////////////////////////////////////////
@@ -1160,8 +1178,9 @@ void GazeboInterface::OnSensorMsg(ConstSensorPtr &_msg)
   if (!this->IsConnected())
     return;
 
-  std::lock_guard<std::recursive_mutex> lock(this->receiveMutex);
+  std::lock_guard<std::mutex> lock(this->receiveMutex);
   this->sensorMsgs.push_back(_msg);
+  this->recieveCondition.notify_all();
 }
 
 /////////////////////////////////////////////////
@@ -1170,8 +1189,9 @@ void GazeboInterface::OnVisualMsg(ConstVisualPtr &_msg)
   if (!this->IsConnected())
     return;
 
-  std::lock_guard<std::recursive_mutex> lock(this->receiveMutex);
+  std::lock_guard<std::mutex> lock(this->receiveMutex);
   this->visualMsgs.push_back(_msg);
+  this->recieveCondition.notify_all();
 }
 
 /////////////////////////////////////////////////
