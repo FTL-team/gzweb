@@ -300,6 +300,7 @@ $(function()
   $('#view-collisions').buttonMarkup({icon: 'false'});
   $('#snap-to-grid').buttonMarkup({icon: 'false'});
   $('#open-tree-when-selected').buttonMarkup({icon: 'false'});
+  $('#view-follow').buttonMarkup({icon: 'false'});
   $('#view-transparent').buttonMarkup({icon: 'false'});
   $('#view-wireframe').buttonMarkup({icon: 'false'});
   $('#view-joints').buttonMarkup({icon: 'false'});
@@ -481,14 +482,15 @@ $(function()
     });
 
     // right-click
-    $('#container').mousedown(function(event)
+    $('#container')[0].addEventListener('mousedown', function(event)
         {
           event.preventDefault();
           if(event.which === 3)
           {
+            event.stopImmediatePropagation();
             globalEmitter.emit('right_click', event);
           }
-        });
+        }, true);
 
     $('#model-popup-screen').mousedown(function(event)
         {
@@ -623,6 +625,11 @@ $(function()
       });
 
   // Object menu
+  $( '#view-follow' ).click(function() {
+    $('#model-popup').popup('close');
+    globalEmitter.emit('follow_obj');
+  });
+
   $( '#view-transparent' ).click(function() {
     $('#model-popup').popup('close');
     globalEmitter.emit('set_view_as','transparent');
@@ -1269,6 +1276,13 @@ GZ3D.Gui = function(scene)
             {
               that.openEntityPopup(event, entity);
             });
+      }
+  );
+
+
+  this.emitter.on('follow_obj', function (viewAs)
+      {
+        that.scene.followSelected();
       }
   );
 
@@ -2083,6 +2097,16 @@ GZ3D.Gui.prototype.openEntityPopup = function(event, entity)
   }
   else
   {
+
+    if (this.scene.selectedEntity.name === this.scene.followName)
+    {
+      $('#view-follow').buttonMarkup({icon: 'check'});
+    }
+    else
+    {
+      $('#view-follow').buttonMarkup({icon: 'false'});
+    }
+
     if (this.scene.selectedEntity.viewAs === 'transparent')
     {
       $('#view-transparent').buttonMarkup({icon: 'check'});

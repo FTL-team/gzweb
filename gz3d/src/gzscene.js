@@ -329,6 +329,9 @@ GZ3D.Scene.prototype.init = function()
   mesh.name = 'COM_VISUAL';
   mesh.rotation.z = -Math.PI/2;
   this.COMvisual.add(mesh);
+
+  this.follow = null;
+  this.followName = 'null_gz3d_empty_follow';
 };
 
 GZ3D.Scene.prototype.initScene = function()
@@ -695,6 +698,10 @@ GZ3D.Scene.prototype.render = function()
   if (this.radialMenu)
   {
     this.radialMenu.update();
+  }
+
+  if(this.follow) {
+    this.follow();
   }
 
   this.renderer.clear();
@@ -2999,4 +3006,20 @@ GZ3D.Scene.prototype.createFromSdf = function(sdf)
   obj.add(mesh);
 
   return obj;
+};
+
+GZ3D.Scene.prototype.followSelected = function()
+{
+  this.followName = this.selectedEntity.name;
+  
+  var target = this.selectedEntity;
+  var target_pos = target.getWorldPosition();
+  var that = this;
+
+  this.follow = function() {
+    var new_pos = target.getWorldPosition();
+    var diff = new_pos.clone().sub(target_pos);
+    that.camera.position.add(diff);
+    target_pos = new_pos;
+  };
 };
