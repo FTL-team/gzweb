@@ -589,8 +589,8 @@ GZ3D.Scene.prototype.getRayCastModel = function(pos, intersect)
       model = objects[i].object;
       if (model.name.indexOf('_lightHelper') >= 0)
       {
-        model = model.parent;
-        break;
+        // model = model.parent;
+        continue;
       }
 
       if (!this.modelManipulator.hovered &&

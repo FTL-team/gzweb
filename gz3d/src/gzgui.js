@@ -313,7 +313,7 @@ $(function()
 
   if (isWideScreen())
   {
-    globalEmitter.emit('openTab', 'mainMenu', 'mainMenu');
+    // globalEmitter.emit('openTab', 'mainMenu', 'mainMenu');
   }
 
   if (isTallScreen())
@@ -413,15 +413,15 @@ $(function()
         event.preventDefault();
       });
 
-    $('#play-header-fieldset')
-        .css('position', 'absolute')
-        .css('right', '41.2em')
-        .css('top', '0em')
-        .css('z-index', '1000');
+    // $('#play-header-fieldset')
+    //     .css('position', 'absolute')
+    //     .css('right', '26em')
+    //     .css('top', '0em')
+    //     .css('z-index', '1000');
 
     $('#clock-mouse')
         .css('position', 'absolute')
-        .css('right', '29.0em')
+        .css('right', '10.0em')
         .css('top', '0.5em')
         .css('z-index', '100')
         .css('width', '11.5em')
@@ -432,45 +432,45 @@ $(function()
 
     $('#mode-header-fieldset')
         .css('position', 'absolute')
-        .css('right', '24.4em')
+        .css('right', '0.5em')
         .css('top', '0.15em')
         .css('z-index', '1000');
 
-    $('#box-header-fieldset')
-        .css('position', 'absolute')
-        .css('right', '15.5em')
-        .css('top', '0em')
-        .css('z-index', '1000');
+    // $('#box-header-fieldset')
+    //     .css('position', 'absolute')
+    //     .css('right', '15.5em')
+    //     .css('top', '0em')
+    //     .css('z-index', '1000');
 
-    $('#sphere-header-fieldset')
-        .css('position', 'absolute')
-        .css('right', '12.5em')
-        .css('top', '0em')
-        .css('z-index', '1000');
+    // $('#sphere-header-fieldset')
+    //     .css('position', 'absolute')
+    //     .css('right', '12.5em')
+    //     .css('top', '0em')
+    //     .css('z-index', '1000');
 
-    $('#cylinder-header-fieldset')
-        .css('position', 'absolute')
-        .css('right', '9.5em')
-        .css('top', '0em')
-        .css('z-index', '1000');
+    // $('#cylinder-header-fieldset')
+    //     .css('position', 'absolute')
+    //     .css('right', '9.5em')
+    //     .css('top', '0em')
+    //     .css('z-index', '1000');
 
-    $('#pointlight-header-fieldset')
-        .css('position', 'absolute')
-        .css('right', '6.5em')
-        .css('top', '0em')
-        .css('z-index', '1000');
+    // $('#pointlight-header-fieldset')
+    //     .css('position', 'absolute')
+    //     .css('right', '6.5em')
+    //     .css('top', '0em')
+    //     .css('z-index', '1000');
 
-    $('#spotlight-header-fieldset')
-        .css('position', 'absolute')
-        .css('right', '3.5em')
-        .css('top', '0em')
-        .css('z-index', '1000');
+    // $('#spotlight-header-fieldset')
+    //     .css('position', 'absolute')
+    //     .css('right', '3.5em')
+    //     .css('top', '0em')
+    //     .css('z-index', '1000');
 
-    $('#directionallight-header-fieldset')
-        .css('position', 'absolute')
-        .css('right', '0.5em')
-        .css('top', '0em')
-        .css('z-index', '1000');
+    // $('#directionallight-header-fieldset')
+    //     .css('position', 'absolute')
+    //     .css('right', '0.5em')
+    //     .css('top', '0em')
+    //     .css('z-index', '1000');
 
     $('.gzGUI').mouseenter(function(event){
         globalEmitter.emit('pointerOnMenu');
