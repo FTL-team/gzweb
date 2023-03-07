@@ -1,5 +1,4 @@
 #!/bin/bash
 
-roscd gzweb
-cd gzbridge
+cd "$(dirname "$0")"/../gzbridge
 node ./server.js 

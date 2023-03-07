@@ -8,6 +8,7 @@ const fs = require('fs');
 const { spawn } = require('child_process')
 const path = require('path');
 const gzbridge = require('./build/Debug/gzbridge');
+const { connected } = require('process');
 
 /**
  * Path from where the static site is served
@@ -164,6 +165,30 @@ let wsServer = new WebSocketServer({
   autoAcceptConnections: false
 });
 
+
+// Led plugin
+let led_plugin = null;
+function startLedPlugin() {
+  led_plugin = spawn(path.join(__dirname, "../plugins/led.py"), [], { stdio: 'pipe' });
+
+  led_plugin.stdout.on('data', (data) => {
+    if (connections.length > 0) {
+      for (let i = 0; i < connections.length; ++i) {
+        connections[i].sendUTF(data);
+      }
+    }
+  });
+  led_plugin.stderr.on('data', (data) => {
+    if (connected) {
+      console.error(`led_plugin_error: ${data}`);
+    }
+  });
+  led_plugin.on('close', () => {
+    // console.log("ERROR")
+  })
+}
+
+
 wsServer.on('request', function (request) {
 
   // Accept request
@@ -185,6 +210,7 @@ wsServer.on('request', function (request) {
 
   if (!isConnected) {
     isConnected = true;
+    startLedPlugin();
     gzNode.setConnected(isConnected);
   }
 
@@ -201,7 +227,7 @@ wsServer.on('request', function (request) {
     else if (message.type === 'binary') {
       // console.log(new Date() + ' Received Binary Message of ' +
       //   message.binaryData.length + ' bytes from ' + request.origin + ' ' +
-        // connection.remoteAddress);
+      // connection.remoteAddress);
       connection.sendBytes(message.binaryData);
     }
   });
@@ -216,8 +242,15 @@ wsServer.on('request', function (request) {
 
     // if there is no connection notify server that there is no connected client
     if (connections.length === 0) {
-      isConnected = false;
-      gzNode.setConnected(isConnected);
+      setTimeout(function () {
+        if (connections.length === 0) {
+          isConnected = false;
+          gzNode.setConnected(isConnected);
+          if (led_plugin) {
+            led_plugin.kill("SIGINT");
+          }
+        }
+      }, 2000)
     }
   });
 });
@@ -238,21 +271,3 @@ if (gzNode.getIsGzServerConnected()) {
   }
 }
 
-
-// Led plugin
-let led_plugin = spawn(path.join(__dirname, "../plugins/led.py"), [], { stdio: 'pipe' });
-
-led_plugin.stdout.on('data', (data) => {
-  if (connections.length > 0) {
-    for (let i = 0; i < connections.length; ++i) {
-      connections[i].sendUTF(data);
-    }
-  }
-});
-led_plugin.stderr.on('data', (data) => {
-  console.error(`led_plugin_error: ${data}`);
-});
-
-led_plugin.on('close', () => {
-  console.log("ERROR")
-})

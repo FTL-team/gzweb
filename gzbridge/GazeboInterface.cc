@@ -874,7 +874,6 @@ void GazeboInterface::ProcessServiceRequests()
     services = this->serviceRequests;
     this->serviceRequests.clear();
   }
-  std::cout << "SERVICES: " << services.size() << std::endl;
 
   // process service request outside lock otherwise somehow it deadlocks
   for (unsigned int i = 0; i < services.size(); ++i)
